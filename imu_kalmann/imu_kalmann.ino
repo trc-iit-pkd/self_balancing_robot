@@ -17,19 +17,19 @@ float AngleRoll, AnglePitch;
 uint32_t LoopTimer;
 // kalman stuff
 float KalmanAngleRoll=0, KalmanUncertaintyAngleRoll=2*2;
-float KalmanAnglePitch=0, KalmanUncertaintyAnglePitch=2*2;
+float KalmanAnglePitch=0, KalmanUncertaintyAnglePitch=2*2, ka_cal=0.0;
 float Kalman1DOutput[]={0,0};
 
 struct PID{
-  double kp = 40.0;
-  double kd = 0.5;
-  double ki = 40.0;
+  double kp = 80.0;
+  double kd = 1.0;
+  double ki = 70.0;
 }pid;
 
 long int pwm = 0; // (0,255)
 long int pwmMax = 255; // maxpwm val
 
-double set_point = 1.0; // angle in degrees
+double set_point = 5.0; // angle in degrees
 double prevErr = 0.0;
 double eintegral = 0.0;
 
@@ -105,7 +105,7 @@ void setup() {
   RateCalibrationYaw/=2000;
   LoopTimer=micros();
 }
-void loop() {
+void loop() { 
   imu_signals();
   RateRoll-=RateCalibrationRoll;
   RatePitch-=RateCalibrationPitch;
@@ -132,7 +132,7 @@ void loop() {
   }
 
 
-  if(KalmanAnglePitch >= 0){
+  if(controlVel <= 0){
     setMotorSpeed(right_motor_speed, right_motor_dir, 1, pwm);
     setMotorSpeed(left_motor_speed, left_motor_dir, 1, pwm);
   }
@@ -161,6 +161,7 @@ void loop() {
 
   while (micros() - LoopTimer < 4000);
   LoopTimer=micros();
+  controlVel = 0.0;
 }
 
 double pidControlOutput(double target_pitch, double current_pitch, double kp_, double kd_, double ki_, double &prevErr_, uint32_t &prevTime_, double &eintegral_){
