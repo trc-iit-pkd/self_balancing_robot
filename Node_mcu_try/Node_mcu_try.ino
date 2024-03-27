@@ -1,112 +1,201 @@
 #include <Wire.h>
-#include <math.h>
 
-// MPU6050 Slave Device Address
-const uint8_t MPU6050SlaveAddress = 0x68;
+const uint8_t scl = 22; // D22
+const uint8_t sda = 21; // D21
 
-// Select SDA and SCL pins for I2C communication 
-const uint8_t scl = 5; // D1
-const uint8_t sda = 4; // D2
+const uint8_t right_motor_speed = 14; //D14 
+const uint8_t right_motor_dir = 13; // D13
 
-const uint8_t right_motor_speed = 12; // 
-const uint8_t right_motor_dir = 13;
-const uint8_t left_motor_speed = 15;
-const uint8_t  left_motor_dir = 3; 
+const uint8_t left_motor_speed = 19; //D19
+const uint8_t left_motor_dir = 18; //D18
 
+
+float RateRoll, RatePitch, RateYaw;
+float RateCalibrationRoll, RateCalibrationPitch, RateCalibrationYaw;
+float RateCalibrationAR, RateCalibrationAP;
+int RateCalibrationNumber;
+float AccX, AccY, AccZ;
+float AngleRoll, AnglePitch;
+uint32_t LoopTimer;
+
+// kalman stuff
+float KalmanAngleRoll=0, KalmanUncertaintyAngleRoll=2*2;
+float KalmanAnglePitch=0, KalmanUncertaintyAnglePitch=2*2, ka_cal=0.0;
+float Kalman1DOutput[]={0,0};
+
+// PID gains
 struct PID{
-  double kp = 1.0;
+  double kp = 100.0;
   double kd = 0.0;
-  double ki = 0.0;
+  double ki = 200.0;
 }pid;
 
-double cmf_gain = 0.665; // complementary filter gain
-double pitch_filt = 0.0;
 
-long int pwm = 50; // (0,255)
-long int pwmMax = 255; // maxpwm val
 
-double set_point = 0.0; // angle in degrees
+double set_point = -1.0; // angle in degrees
 double prevErr = 0.0;
 double eintegral = 0.0;
 
-// sensitivity scale factor respective to full scale setting provided in datasheet 
-const uint16_t AccelScaleFactor = 16384; // +-2g full scale
-const uint16_t GyroScaleFactor = 131; // += 250 full scale
+long int pwm = 0; // (0,255)
+long int pwmMax = 255; // maxpwm val
 
-// MPU6050 few configuration register addresses
-const uint8_t MPU6050_REGISTER_SMPLRT_DIV   =  0x19;
-const uint8_t MPU6050_REGISTER_USER_CTRL    =  0x6A;
-const uint8_t MPU6050_REGISTER_PWR_MGMT_1   =  0x6B;
-const uint8_t MPU6050_REGISTER_PWR_MGMT_2   =  0x6C;
-const uint8_t MPU6050_REGISTER_CONFIG       =  0x1A;
-const uint8_t MPU6050_REGISTER_GYRO_CONFIG  =  0x1B;
-const uint8_t MPU6050_REGISTER_ACCEL_CONFIG =  0x1C;
-const uint8_t MPU6050_REGISTER_FIFO_EN      =  0x23;
-const uint8_t MPU6050_REGISTER_INT_ENABLE   =  0x38;
-const uint8_t MPU6050_REGISTER_ACCEL_XOUT_H =  0x3B;
-const uint8_t MPU6050_REGISTER_SIGNAL_PATH_RESET  = 0x68;
-
-int16_t AccelX, AccelY, AccelZ, Temperature, GyroX, GyroY, GyroZ;
-
-unsigned long currTime, prevTime=0; 
-double loopTime;
-double gyroAngle=0;
-float pitch, roll;
-
-void setup() {
-  Serial.begin(115200);
-  Wire.begin(sda, scl);
-  MPU6050_Init();
+void kalman_1d(float KalmanState, float KalmanUncertainty, float KalmanInput, float KalmanMeasurement) {
+  KalmanState=KalmanState+0.004*KalmanInput;
+  KalmanUncertainty=KalmanUncertainty + 0.004 * 0.004 * 4 * 4;
+  float KalmanGain=KalmanUncertainty * 1/(1*KalmanUncertainty + 3 * 3);
+  KalmanState=KalmanState+KalmanGain * (KalmanMeasurement-KalmanState);
+  KalmanUncertainty=(1-KalmanGain) * KalmanUncertainty;
+  Kalman1DOutput[0]=KalmanState; 
+  Kalman1DOutput[1]=KalmanUncertainty;
 }
+void imu_signals(void) {
+  Wire.beginTransmission(0x68);
+  Wire.write(0x1A);
+  Wire.write(0x05);
+  Wire.endTransmission();
+  Wire.beginTransmission(0x68);
+  Wire.write(0x1C);
+  Wire.write(0x10);
+  Wire.endTransmission();
+  Wire.beginTransmission(0x68);
+  Wire.write(0x3B);
+  Wire.endTransmission(); 
+  Wire.requestFrom(0x68,6);
+  int16_t AccXLSB = Wire.read() << 8 | Wire.read();
+  int16_t AccYLSB = Wire.read() << 8 | Wire.read();
+  int16_t AccZLSB = Wire.read() << 8 | Wire.read();
+  Wire.beginTransmission(0x68);
+  Wire.write(0x1B); 
+  Wire.write(0x8);
+  Wire.endTransmission();     
+  Wire.beginTransmission(0x68);
+  Wire.write(0x43);
+  Wire.endTransmission();
+  Wire.requestFrom(0x68,6);
+  int16_t GyroX=Wire.read()<<8 | Wire.read();
+  int16_t GyroY=Wire.read()<<8 | Wire.read();
+  int16_t GyroZ=Wire.read()<<8 | Wire.read();
+  RateRoll=(float)GyroX/65.5; //+-500 deg/s
+  RatePitch=(float)GyroY/65.5;
+  RateYaw=(float)GyroZ/65.5;
+  AccX=(float)AccXLSB/4096;
+  AccY=(float)AccYLSB/4096;
+  AccZ=(float)AccZLSB/4096;
+  AngleRoll=atan(AccY/sqrt(AccX*AccX+AccZ*AccZ))*1/(3.142/180);
+  AnglePitch=-atan(AccX/sqrt(AccY*AccY+AccZ*AccZ))*1/(3.142/180);
+}
+void setup() {
+  Serial.begin(57600);
 
-void loop() {
-  currTime = micros();
-  loopTime = (double) (currTime - prevTime);
-  prevTime = currTime;
-  // prevTime2 = (double) (prevTime);
-  double Ax, Ay, Az, T, Gx, Gy, Gz;
+  pinMode(right_motor_speed,OUTPUT);
+  pinMode(right_motor_dir, OUTPUT);
+  pinMode(left_motor_speed, OUTPUT);
+  pinMode(left_motor_dir, OUTPUT);
+
+  // pinMode(14,OUTPUT); //For checking purpose GPIO14 - D5
   
-  Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H);
+  Wire.setClock(400000); // 400kHz(fast mode transmission)
+  Wire.begin(sda, scl);
+  delay(250);
+  Wire.beginTransmission(0x68); 
+  Wire.write(0x6B);
+  Wire.write(0x00);
+  Wire.endTransmission();
+  for (RateCalibrationNumber=0; RateCalibrationNumber< 2000; RateCalibrationNumber ++) {
+    imu_signals();
+    RateCalibrationRoll += RateRoll;
+    RateCalibrationPitch += RatePitch;
+    RateCalibrationYaw += RateYaw;
+    delay(1);
+  }
+  RateCalibrationRoll/=2000;
+  RateCalibrationPitch/=2000;
+  RateCalibrationYaw/=2000;
+
+  for (RateCalibrationNumber=0; RateCalibrationNumber< 2000; RateCalibrationNumber ++) {
+    imu_signals();
+    RateCalibrationAR += AngleRoll;
+    RateCalibrationAP += AnglePitch;
+    delay(1);
+  }
+  RateCalibrationAR/=2000;
+  RateCalibrationAP/=2000;
   
-  //divide each with their sensitivity scale factor
-  Ax = (double)AccelX/AccelScaleFactor*9.81 + 0.1;
-  Ay = (double)AccelY/AccelScaleFactor*9.81 + 0.33-0.25;
-  Az = (double)AccelZ/AccelScaleFactor*9.81 + 0.51-0.39-1.0;
-  // T = (double)Temperature/340+36.53; //temperature formula
-  Gx = (double)GyroX/GyroScaleFactor + 0.38 + 1.10;
-  Gy = (double)GyroY/GyroScaleFactor - 0.31-0.90;
-  Gz = (double)GyroZ/GyroScaleFactor - 0.12-0.33;
+  LoopTimer=micros();
+}
+void loop() { 
+  imu_signals();
+  RateRoll-=RateCalibrationRoll;
+  RatePitch-=RateCalibrationPitch;
+  RateYaw-=RateCalibrationYaw;
+  AngleRoll-=RateCalibrationAR;
+  AnglePitch-=RateCalibrationAP;
+
+  kalman_1d(KalmanAngleRoll, KalmanUncertaintyAngleRoll, RateRoll, AngleRoll);
+  KalmanAngleRoll=Kalman1DOutput[0]; 
+  KalmanUncertaintyAngleRoll=Kalman1DOutput[1];
+  kalman_1d(KalmanAnglePitch, KalmanUncertaintyAnglePitch, RatePitch, AnglePitch);
+  KalmanAnglePitch=Kalman1DOutput[0]; 
+  KalmanUncertaintyAnglePitch=Kalman1DOutput[1];
+
+  int controlVel = pidControlOutput(set_point, KalmanAnglePitch, pid.kp, pid.kd, pid.ki, prevErr, LoopTimer, eintegral); // apply to body frame long vel of the robot 
+  
+  if(controlVel == sqrt(-1)){
+    pwm = 0;
+  }
+  
+  pwm = (int) abs(controlVel);
 
 
-  delay(50);
-  gyroAngle = gyroAngle + Gy * loopTime/1.0e6;
-  getAngle(Ax, Ay, Az); // processes the roll and pitch global variables
+  if(pwm >= 255){
+    pwm = 255;
+  }
 
-  pitch_filt = cmf_gain*(gyroAngle+pitch_filt) + (1-cmf_gain)*pitch;
 
-  double controlVel = pidControlOutput(set_point, pitch_filt, pid.kp, pid.kd, pid.ki, prevErr, prevTime, eintegral); // apply to body frame long vel of the robot 
-  pwm = pwm + (int) (controlVel);
+//  if(controlVel >= 0){
+//    setMotorSpeed(right_motor_speed, right_motor_dir, 1, pwm);
+//    setMotorSpeed(left_motor_speed, left_motor_dir, 1, pwm);
+//  }
+//  else{
+//    setMotorSpeed(right_motor_speed, right_motor_dir, 0, pwm);
+//    setMotorSpeed(left_motor_speed, left_motor_dir, 0, pwm);
+//  }
 
-  Serial.print("pwm_val: ");
-  Serial.print(pwm);
-  Serial.print(", ");
-  Serial.print("Accelerometer_pitch: ");
-  Serial.print(", ");
-  Serial.print(pitch);
-  Serial.print(", ");
-  Serial.print("gyro_pitch: ");
-  Serial.print(gyroAngle);
-  Serial.print(", ");
-  Serial.print("pitch_filtered: ");
-  Serial.print(pitch_filt);
-  Serial.print(", ");
-  Serial.print("Control_input");
+
+  // Serial.print("pwm_val: ");
+  // Serial.print(pwm);
+  // Serial.print(", ");
+  Serial.print("Set_point:");
+  Serial.print(set_point);
+  Serial.print(",");
+  Serial.print("Control_input:");
   Serial.println(controlVel);
-  Serial.println(loopTime); 
+  Serial.print(",");
+  Serial.print("Pitch_Angle:");
+  Serial.print(KalmanAnglePitch);
   Serial.println();
 
-  // delay(10);
+  while (micros() - LoopTimer < 4000);
+  LoopTimer=micros();
+  controlVel = 0.0;
+
+  // triginterrupt();
 }
+
+double pidControlOutput(double target_pitch, double current_pitch, double kp_, double kd_, double ki_, double &prevErr_, uint32_t &prevTime_, double &eintegral_){
+  uint32_t currentTime = micros();
+  double dt = (double) (currentTime-prevTime_)*1.0e-6;
+  prevTime_ = currentTime;
+
+  double err = target_pitch-current_pitch;
+  eintegral += err*dt;
+  prevErr_ = err;
+
+  double controlInput = kp_*err + kd_*(err-prevErr_)/dt + ki_*(eintegral);
+  return controlInput;
+
+}
+
 
 void setMotorSpeed(uint8_t pwm_pin, uint8_t dir_pin, int dir, int pwm_val){
   analogWrite(pwm_pin, pwm_val);
@@ -118,67 +207,8 @@ void setMotorSpeed(uint8_t pwm_pin, uint8_t dir_pin, int dir, int pwm_val){
   }
 }
 
-
-double pidControlOutput(double target_pitch, double current_pitch, double kp_, double kd_, double ki_, double &prevErr_, unsigned long &prevTime_, double &eintegral_){
-  unsigned long currentTime = micros();
-  double dt = (double) (currentTime-prevTime_)*1.0e-6;
-  prevTime_ = currentTime;
-
-  double err = target_pitch-current_pitch;
-  eintegral += err*dt;
-  prevErr_ = err;
-
-  double controlInput = kp_*err + kd_*(err-prevErr_)/dt + ki_*(eintegral);
-  return controlInput;
- 
-
-}
-
-
-void I2C_Write(uint8_t deviceAddress, uint8_t regAddress, uint8_t data){
-  Wire.beginTransmission(deviceAddress);
-  Wire.write(regAddress);
-  Wire.write(data);
-  Wire.endTransmission();
-}
-
-// read all 14 register
-void Read_RawValue(uint8_t deviceAddress, uint8_t regAddress){
-  Wire.beginTransmission(deviceAddress);
-  Wire.write(regAddress);
-  Wire.endTransmission();
-  Wire.requestFrom(deviceAddress, (uint8_t)14);
-  AccelX = (((int16_t)Wire.read()<<8) | Wire.read());
-  AccelY = (((int16_t)Wire.read()<<8) | Wire.read());
-  AccelZ = (((int16_t)Wire.read()<<8) | Wire.read());
-  Temperature = (((int16_t)Wire.read()<<8) | Wire.read());
-  GyroX = (((int16_t)Wire.read()<<8) | Wire.read());
-  GyroY = (((int16_t)Wire.read()<<8) | Wire.read());
-  GyroZ = (((int16_t)Wire.read()<<8) | Wire.read());
-}
-
-//configure MPU6050
-void MPU6050_Init(){
-  delay(150);
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_SMPLRT_DIV, 0x07);
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_PWR_MGMT_1, 0x01);
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_PWR_MGMT_2, 0x00);
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_CONFIG, 0x00);
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_GYRO_CONFIG, 0x00);//set +/-250 degree/second full scale
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_CONFIG, 0x00);// set +/- 2g full scale
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_FIFO_EN, 0x00);
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_INT_ENABLE, 0x01);
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_SIGNAL_PATH_RESET, 0x00);
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_USER_CTRL, 0x00);
-}
-
-void getAngle(float Vx, float Vy, float Vz) {
-  float x = Vx;
-  float y = Vy;
-  float z = Vz;
-  pitch = atan(x / sqrt((y * y) + (z * z)));
-  roll = atan(y / sqrt((x * x) + (z * z)));
-  //convert radians into degrees
-  pitch = pitch * (180.0 / 3.14);
-  roll = roll * (180.0 / 3.14) ;
-}
+void triginterrupt(){
+  digitalWrite(14,HIGH);
+  delay(1);
+  digitalWrite(14,LOW);
+  }
