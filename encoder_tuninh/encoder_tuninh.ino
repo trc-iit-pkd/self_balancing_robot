@@ -96,7 +96,7 @@ void setup() {
 
 void loop() {
   posLeft = encoderLeft.getCount()/2; 
-  posRight = encoderRight.getCount();
+  posRight = encoderRight.getCount()/2;
 
   currTLeft = micros();
   deltaTLeft = ((float) (currTLeft - prevTLeft)) / 1.0e6;
