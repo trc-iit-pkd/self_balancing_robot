@@ -3,8 +3,8 @@
 
 
 // imu definitions
-uint8_t scl = 5; //D1
-uint8_t sda = 4; //D2
+const uint8_t scl = 22; 
+const uint8_t sda = 21; 
 // imu angle data globals
 float RateRoll, RatePitch, RateYaw;
 float AccX, AccY, AccZ;
@@ -34,7 +34,7 @@ void kalman_1d(float KalmanState, float KalmanUncertainty, float KalmanInput, fl
   Kalman1DOutput[1]=KalmanUncertainty;
 }
 
-void imu_signals(){
+void imu_signals(void){
   //0x68 --> SIGNAL_PATH_RESET
   Wire.beginTransmission(0x68);  // waking up the imu and reseting gyro/accel/temp sensors
   // 0x1A --> CONFIG to config external DLPF for gyro and accele
@@ -127,22 +127,46 @@ struct errParamDef{
 };
 
 
-struct enPose{
+struct enParams{
   volatile int pos=0;
   volatile int posPrev = 0;
   volatile float velocity=0.0;
+  float vel_rpm = 0.0;
+  float vel_filt = 0.0;
+  float vel_prev_filt = 0.0;
+  float vel_targ = 20.0;
+  float uControl = 0.0;
 };
 
 
 uint32_t LoopTimer; // 1/controlLoop_frequency
-enPose Left, Right;
+enParams Left, Right;
 TimeDefs tLeft, tRight;
-
+PIDGains LeftPID,RightPID, BalancePID;
+errParamDef LeftErr, RightErr;
 
 
 void setup() {
   Serial.begin(57600); // baud rates affects the rate of data recieved by the arduino/esp32/esp82 not the control algo
-  
+
+  //***********************************************************************************************
+  //Setting the PID parameters:
+
+  LeftPID.kp = 10.0;
+  LeftPID.ki = 1.0;
+  LeftPID.kd = 0.0;
+
+  RightPID.kp = 10.0;
+  RightPID.ki = 1.0;
+  RightPID.kd = 0.0;
+
+  BalancePID.kp = 150.0;
+  BalancePID.ki = 0.0;
+  BalancePID.kd = 5.0;
+
+  //***********************************************************************************************
+
+
   // setting up pins and pin modes of motor
   pinMode(motorPinDirectionLeft, OUTPUT);
   pinMode(motorPinSpeedLeft, OUTPUT);
@@ -150,7 +174,7 @@ void setup() {
   pinMode(motorPinSpeedRight, OUTPUT);
   Serial.println("Motor Pins Defined!");
 
- pinMode(25,OUTPUT); //For checking purpose GPIO14 - D5(recheck for esp32)
+ pinMode(25,OUTPUT); //For checking purpose GPIO14 - D25(recheck for esp32)
 
   //************************************ Encoder setup *******************************************
   Serial.println("Encoder Setting up...");
@@ -177,8 +201,8 @@ void setup() {
   Wire.endTransmission();
   Serial.println("Calibrating gyro......");
   // calibration of offsets
-  for (cal.RateCalibrationNumber=0; cal.RateCalibrationNumber< 10; cal.RateCalibrationNumber++) {
-    Serial.print("Waiting...");
+  for (cal.RateCalibrationNumber=0; cal.RateCalibrationNumber< 20; cal.RateCalibrationNumber++) {
+    Serial.print(".");
     imu_signals();
     cal.RateCalibrationRoll += RateRoll;
     cal.RateCalibrationPitch += RatePitch;
@@ -187,21 +211,21 @@ void setup() {
     
   }
   Serial.println("Gyro Calibration over...");
-  cal.RateCalibrationRoll/=10;
-  cal.RateCalibrationPitch/=10;
-  cal.RateCalibrationYaw/=10;
+  cal.RateCalibrationRoll/=20;
+  cal.RateCalibrationPitch/=20;
+  cal.RateCalibrationYaw/=20;
 
   Serial.println("Calibrating accelerometer...");
-  for (cal.RateCalibrationNumber=0; cal.RateCalibrationNumber< 10; cal.RateCalibrationNumber++) {
-    Serial.print("Waiting.....");
+  for (cal.RateCalibrationNumber=0; cal.RateCalibrationNumber< 20; cal.RateCalibrationNumber++) {
+    Serial.print(".");
     imu_signals();
     cal.RateCalibrationAR += AngleRoll;
     cal.RateCalibrationAP += AnglePitch;
     delay(1);
   }
   Serial.println("Accelerometer Calibration over...");
-  cal.RateCalibrationAR/=10;
-  cal.RateCalibrationAP/=10;
+  cal.RateCalibrationAR/=20;
+  cal.RateCalibrationAP/=20;
   
   LoopTimer=micros();
   tLeft.prevT = LoopTimer;
@@ -231,6 +255,8 @@ void loop() {
   // delay(50); // don't know if this delay is technical needed but for safety keeping it for first testing
 
   // ******************************************************************************* getting imu data ********************************************************* 
+  // delay(50);
+  // interrupts();
   imu_signals();
   RateRoll-=cal.RateCalibrationRoll;
   RatePitch-=cal.RateCalibrationPitch;
@@ -243,11 +269,35 @@ void loop() {
   kalman_1d(KalmanAnglePitch, KalmanUncertaintyAnglePitch, RatePitch, AnglePitch);
   KalmanAnglePitch=Kalman1DOutput[0]; 
   KalmanUncertaintyAnglePitch=Kalman1DOutput[1];
+  // noInterrupts();
   // *************************************************************************************************************************************************************
 
+  //*********************************************Applying PID on the wheel velocity********************************************************************************************
+
+ // Converting the velocity to RPM, the conversion factor may vary based on the CPR and gear ration
+  Left.vel_rpm = (Left.velocity * 60)/(34560); // GearRatio=540:1, CPR=32
+  Right.vel_rpm = (Right.velocity * 60)/(17280); // GearRatio=540:1, CPR=16  
+
+  //Applying filter to the velocity
+
+  Left.vel_filt = lowPassFilter(Left.vel_rpm, Left.vel_prev_filt);
+  Right.vel_filt = lowPassFilter(Right.vel_rpm, Right.vel_prev_filt); // 25HZ cuttoff  
+
+  Left.uControl = pidControl(Left.vel_targ, Left.vel_filt, LeftPID.kp, LeftPID.ki, LeftPID.kd, LeftErr.err_, LeftErr.errPrev_, LeftErr.eintegral_, tLeft.deltaT);
+  Right.uControl = pidControl(Right.vel_targ, Right.vel_filt, RightPID.kp, RightPID.ki, RightPID.kd, RightErr.err_, RightErr.errPrev_, RightErr.eintegral_, tRight.deltaT);
+
+   if(Right.uControl >= 30.0 || Left.uControl >= 30.0){
+    Right.uControl = 30.0;
+    Left.uControl = 30.0;
+  }
+  else if(Right.uControl <= -30.0 || Left.uControl <= -30.0){
+    Right.uControl = -30.0;
+    Left.uControl = -30.0;
+  }
+
   // motor motion and PID-control algo(here)
-  setMotor(255, motorPinSpeedLeft, motorPinDirectionLeft);
-  setMotor(255, motorPinSpeedRight, motorPinDirectionRight);
+  setMotor(Left.uControl, motorPinSpeedLeft, motorPinDirectionLeft);
+  setMotor(Right.uControl, motorPinSpeedRight, motorPinDirectionRight);
   //
 
   // encoder data
@@ -257,39 +307,36 @@ void loop() {
   Serial.print("deltaRight:");
   Serial.print(tRight.deltaT);
   Serial.print(",");
-  Serial.print("Left:");
-  Serial.print(Left.pos);
-  Serial.print(",");
-  Serial.print("LeftCPS:");
-  Serial.print(Left.velocity);
-  Serial.print("Right:");
-  Serial.print(Right.pos);
-  Serial.print(",");
-  Serial.print("RightCPS:");
-  Serial.print(Right.velocity);
-  Serial.println();
+  // Serial.print("Left RPM:");
+  // Serial.print(Left.uControl);
+  // Serial.print("Right RPM:");
+  // Serial.print(Right.uControl);
+  // Serial.print(",");
+  // Serial.print("Target RPM:");
+  // Serial.print(Right.vel_targ);
+  // Serial.print(",");
+  // Serial.println();
 
   // imu data
-  // Serial.print("KalmanPitch:");
-  // Seiral.print(KalmanAnglePitch);
-  // Serial.print(",");
-  // Seiral.print("KalmanRoll:");
-  // Serial.print(KalmanAngleRoll);
-  // Serial.println();
+  Serial.print("KalmanPitch:");
+  Serial.print(KalmanAnglePitch);
+  Serial.print(",");
+  Serial.print("KalmanRoll:");
+  Serial.print(KalmanAngleRoll);
+  Serial.println();
 
   while (micros() - LoopTimer < 4000);
   LoopTimer=micros();
-  trig_pin();
-  delay(1);
 
+  delay(10);
 }
 
 // custom function defintions here 
 void setMotor(float uControl, int in1, int in2) {
   int dir = (uControl >= 0) ? 1 : -1;
   // MAPPING pwm->rpm
-  int pwmVal = min(255, abs((int)uControl));
-  // int pwmVal = map(abs(int(uControl)), 0, 30, 0, 255);
+  // int pwmVal = min(255, abs((int)uControl));
+  int pwmVal = map(abs(int(uControl)), 0, 30, 0, 255);
   analogWrite(in2, pwmVal); // Motor speed
   digitalWrite(in1, (dir == 1) ? HIGH : LOW);
   // Serial.print("pwm:");
@@ -297,12 +344,21 @@ void setMotor(float uControl, int in1, int in2) {
   // Serial.println();
 }
 
+
+float pidControl(float vTar_, float vAct_, float kp_, float ki_, float kd_, float &err_, float &errPrev_, float &eintegral_, float dt_) {
+  err_ = vTar_ - vAct_;
+  eintegral_ += (dt_) * (err_);
+  float uControl = kp_ * err_ + ki_ * eintegral_ + ((kd_ * (err_ - errPrev_)/(dt_)));
+  errPrev_ = err_;
+  return uControl*60;
+}
+
 // low-pass filter function(25Hz- cuttoff freq --> needs experimental verification to use a better cuttoff frequency)
-// float lowPassFilter(float v1_, float &v1Prev_) {
-//   float v1Filt_ = 0.854 * v1Filt_ + 0.0728 * v1_ + 0.0728 * v1Prev_;
-//   v1Prev_ = v1_;
-//   return v1Filt_;
-// }
+float lowPassFilter(float v1_, float &v1Prev_) {
+  float v1Filt_ = 0.854 * v1Filt_ + 0.0728 * v1_ + 0.0728 * v1Prev_;
+  v1Prev_ = v1_;
+  return v1Filt_;
+}
 
 void trig_pin(){
   digitalWrite(25,HIGH);
