@@ -21,6 +21,37 @@ void printInfo(){
   }
 }
 
+void receiveBluetoothData() {
+  if (SerialBT.available()) {
+    String dataReceived = SerialBT.readStringUntil('>');
+    
+    // Find positions of colons
+    int firstColon = dataReceived.indexOf(':');
+    int secondColon = dataReceived.indexOf(':', firstColon + 1);
+    
+    // Extract values between colons
+    String value1 = dataReceived.substring(1, firstColon);
+    String value2 = dataReceived.substring(firstColon + 1, secondColon);
+    String value3 = dataReceived.substring(secondColon + 1);
+
+    // Convert strings to integers
+    int intValue1 = value1.toDouble();
+    int intValue2 = value2.toDouble();
+    int intValue3 = value3.toDouble();
+
+    // Serial.print("Recieved value of Kp: ");
+    // Serial.println(intValue1);
+    // Serial.print("Recieved value of Ki: ");
+    // Serial.println(intValue2);
+    // Serial.print("Recieved value of Kd: ");
+    // Serial.println(intValue3);
+    wayControlSetPoint = intValue3;
+    // wayControl.SetTunings(intValue1,intValue2,intValue3); // Set new control parameters
+    
+  }
+}
+
+
 // void checkSerial(){
 //   receiveWithStartEndmarker();
 //   if(newData == true){

@@ -2,6 +2,10 @@
 #include "Wire.h"
 #include <PID_v1.h>
 #include <ESP32Encoder.h>
+#include <BluetoothSerial.h>
+#include "CytronMotorDriver.h"
+
+BluetoothSerial SerialBT;
 
 ESP32Encoder EncoderA;
 ESP32Encoder EncoderB;
@@ -26,6 +30,10 @@ const uint8_t sda = 21;
 
 
 // ***Motors***
+
+CytronMD motor1(PWM_PWM, AENABLE, APHASE);  
+CytronMD motor2(PWM_PWM, BENABLE, BPHASE);
+
 double motorPWM = 0;  // Motor speed, control signal of the pitch angle PID controller
 int motorDirection;
 
@@ -62,12 +70,12 @@ int sampleTime = 10; // How often the PID algorithm is evaluated (in ms)
 int angleControlMin = -255, angleControlMax = 255; // Limits of the output control signal (motorPWM)
 double angleControlSetPoint = 0; // Setpoint pitch angle
 double angleControlKP = 10, angleControlKI = 200, angleControlKD = 0.1; // PID controller tuning parameters
-PID angleControl(&KalmanAnglePitch, &motorPWM, &angleControlSetPoint, angleControlKP, angleControlKI, angleControlKD, DIRECT); // Create the PID controller object; '&' symbol attaches variable to the object
+PID angleControl(&KalmanAnglePitch, &motorPWM, &angleControlSetPoint, angleControlKP, angleControlKI , angleControlKD, DIRECT); // Create the PID controller object; '&' symbol attaches variable to the object
 
 // Way PID
-int wayControlMin = -200, wayControlMax = 200; // Limits of the output control signal (motorPWM)
-double wayControlSetPoint = 1; // Setpoint for path
-double wayControlKP = 9, wayControlKI = 0, wayControlKD = 5; // PID controller tuning parameters
+int wayControlMin = -2, wayControlMax = 2; // Limits of the output control signal (motorPWM)
+double wayControlSetPoint = 0.0; // Setpoint for path
+double wayControlKP = 10, wayControlKI = 0, wayControlKD = 0.1; // PID controller tuning parameters
 PID wayControl(&way, &angleControlSetPoint, &wayControlSetPoint, wayControlKP, wayControlKI, wayControlKD, DIRECT); // Create the PID controller object; wayControlSetPoint is the controlled variable and input variable of the angle PID controller
 
 // ***System State***
@@ -75,9 +83,10 @@ bool enabled = true; // Specifies whether motors are turned on or off0
 bool wayControlEnabled = true; // Specifies whether path control is turned on or off
 
 // ***Timing***
-long currentTime = 0; // Variable to store the current time
+double currentTime = 0; // Variable to store the current time
 long lastTime = 0; // Variables to store the time of the last serial output
-long gyroTime = 0; // Time since the last gyro value measurement
+double wheelTime = 0; // Time since the wheel encoder value measurement
+double timerWheel = 0; //Time for wheel encoder
 long gyroDt = 0; // Time interval
 
 
@@ -95,8 +104,8 @@ void setup() {
 
   ESP32Encoder::useInternalWeakPullResistors = puType::up;
 
-  EncoderA.attachFullQuad(ENCODERA1, ENCODERA2);  // Left motor
-  EncoderB.attachFullQuad(ENCODERB1, ENCODERB1); // Right Motor
+  EncoderA.attachFullQuad(ENCODERA2, ENCODERA1);  // Left motor
+  EncoderB.attachFullQuad(ENCODERB2, ENCODERB1); // Right Motor
     
   EncoderA.setCount(0);
   EncoderB.setCount(0);
@@ -104,26 +113,31 @@ void setup() {
   Serial.println("Encoder Left Start = " + String((int32_t)EncoderA.getCount()));
   Serial.println("Encoder Right Start = " + String((int32_t)EncoderB.getCount()));
 
-
+  SerialBT.begin("Self Balancing");
   initializePID(); // Initialize PID controllers
-  initializeMotor(); // Initialize motors
+  // initializeMotor(); // Initialize motors
   initializeIMU(); // Initialize IMU
   lastTime = millis(); // Start timer
 }
 
 void loop() {
+  // currentTime = millis();
   calculateAngle(); // Determine pitch angle from IMU
   calculateWay(); // Calculate distance from encoders
   if(wayControlEnabled == true){
     wayControl.Compute(); // Calculate control signal
   }
 //   if (abs(angleControlSetPoint) >=3){
-//    angleControlSetPoint = 0;
+//    angleControlSetPoint = 3;
 // }
   angleControl.Compute(); // Calculate control signal
   if(enabled == true){
     moveMotor(motorPWM); // Move motors
   }
   printInfo();
+  receiveBluetoothData(); 
+  // updateKp();
+  // updateKi();
+  // updateKd();
   // checkSerial();
 }
