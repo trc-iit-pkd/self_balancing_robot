@@ -77,4 +77,51 @@
   <self_collide>true</self_collide>
 </gazebo>
 
+ <gazebo reference="imu_link_1">
+    <gravity>true</gravity>
+    <sensor name="imu_sensor" type="imu">
+      <always_on>true</always_on>
+      <update_rate>100</update_rate>
+      <visualize>true</visualize>
+      <topic>__default_topic__</topic>
+      <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
+        <topicName>imu</topicName>
+        <bodyName>imu_link_1</bodyName>
+        <updateRateHZ>10.0</updateRateHZ>
+        <gaussianNoise>0.0</gaussianNoise>
+        <xyzOffset>0 0 0</xyzOffset>
+        <rpyOffset>0 0 0</rpyOffset>
+        <frameName>imu_link_1</frameName>
+        <initialOrientationAsReference>false</initialOrientationAsReference>
+      </plugin>
+      <pose>0 0 0 0 0 0</pose>
+    </sensor>
+  </gazebo>
+
+<gazebo>
+      <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
+        <!-- <ros>
+          <argument>odom:=odom/unfiltered</argument>
+        </ros> -->
+
+        <num_wheel_pairs>1</num_wheel_pairs>
+
+        <left_joint>left_wheel_joint</left_joint>
+        <right_joint>right_wheel_joint</right_joint>
+
+        <wheel_separation>0.03</wheel_separation>
+        <wheel_diameter>0.065</wheel_diameter>
+
+        <updateRate>10.0</updateRate>
+        <max_wheel_acceleration>1.0</max_wheel_acceleration>
+        <max_wheel_torque>30</max_wheel_torque>
+        <robot_base_frame>base_link</robot_base_frame>
+        <publish_odom>true</publish_odom>
+        <publish_odom_tf>true</publish_odom_tf>
+        <publish_wheel_tf>false</publish_wheel_tf>
+        <odometry_frame>odom</odometry_frame>
+      </plugin>
+    </gazebo>
+
+
 </robot>

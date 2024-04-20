@@ -9,6 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 # uncomment the following section in order to fill in
@@ -20,6 +21,7 @@ ament_target_dependencies(ros_test_node
   rclcpp 
   geometry_msgs
   sensor_msgs
+  nav_msgs
   tf2
 )
 

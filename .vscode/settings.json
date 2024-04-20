@@ -1,0 +1,19 @@
+{
+    "cmake.sourceDirectory": "/home/paradox/self_balancing_ws/src/self_balancing_robot/ros_test",
+    "python.autoComplete.extraPaths": [
+        "/home/paradox/self_balancing_ws/install/sf_bot_description/lib/python3.10/site-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages",
+        "/media/paradox/programming/python_libs"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/paradox/self_balancing_ws/install/sf_bot_description/lib/python3.10/site-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages",
+        "/media/paradox/programming/python_libs"
+    ],
+    "files.associations": {
+        "chrono": "cpp",
+        "vector": "cpp"
+    }
+}
