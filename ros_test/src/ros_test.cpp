@@ -80,7 +80,7 @@ public:
       double dt = (currentTime-this->previousTimeUpdate)*(1.0e-9);
 
       RCLCPP_INFO(this->get_logger(), "timeStep: %f", dt);
-      double error = this->targetPitch_+this->pitch_; // since diff drive plugin has the kinematics (pitching pwd means the bot needs +ve cmd and its negation of the pitch back)
+      double error = -(this->targetPitch_-this->pitch_); // since diff drive plugin has the kinematics (pitching pwd means the bot needs +ve cmd and its negation of the pitch back)
       eIntegral += error*sampleTime;
       
       // pid on the body-x velc (bot frame)
