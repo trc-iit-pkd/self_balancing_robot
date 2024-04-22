@@ -1,6 +1,6 @@
 void printInfo(){
   // Print value on the serial monitor every 50 milliseconds
-  if(millis() - lastTime >= 50){
+  if(millis() - lastTime >= 100){
     lastTime = millis();
     //Serial.println(angleControlSetPoint);
     Serial.print("Pitch Angle:");
@@ -45,8 +45,8 @@ void receiveBluetoothData() {
     // Serial.println(intValue2);
     // Serial.print("Recieved value of Kd: ");
     // Serial.println(intValue3);
-    wayControlSetPoint = intValue3;
-    // wayControl.SetTunings(intValue1,intValue2,intValue3); // Set new control parameters
+    // wayControlSetPoint = intValue3;
+    angleControl.SetTunings(intValue1,intValue2,intValue3); // Set new control parameters
     
   }
 }

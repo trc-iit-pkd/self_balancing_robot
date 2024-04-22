@@ -53,8 +53,8 @@ void calculateWay(){
   way2 = (encoderBposition * 2 * M_PI * 0.035 / 540 / 16);
   // timerWheel = (currentTime - wheelTime)/1.0e6;
   way = (way1+way2)/(2); // Calculate distance: 0.035 = radius of the wheel in meters; 540 = gear ratio; 32 = number of counts per revolution of the magnetic disc
-  // Serial.println(currentTime);
-  // Serial.println(wheelTime);
+  // Serial.println(encoderAposition);
+  // Serial.println(encoderBposition);
   // Serial.println(timerWheel,5);
   Serial.println(way);
   // wheelTime = currentTime;
