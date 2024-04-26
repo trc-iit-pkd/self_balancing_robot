@@ -56,6 +56,6 @@ void calculateWay(){
   // Serial.println(encoderAposition);
   // Serial.println(encoderBposition);
   // Serial.println(timerWheel,5);
-  Serial.println(way);
+  // Serial.println(way);
   // wheelTime = currentTime;
 }

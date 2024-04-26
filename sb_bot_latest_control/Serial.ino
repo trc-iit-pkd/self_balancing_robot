@@ -1,6 +1,7 @@
 void printInfo(){
   // Print value on the serial monitor every 50 milliseconds
   if(millis() - lastTime >= 100){
+    SerialBT.print(way);
     lastTime = millis();
     //Serial.println(angleControlSetPoint);
     Serial.print("Pitch Angle:");
@@ -14,6 +15,9 @@ void printInfo(){
     Serial.print(",");
     Serial.print("New Setpoint: ");
     Serial.print(angleControlSetPoint);
+    Serial.print(",");
+    Serial.print("New Setpoint Way: ");
+    Serial.print(wayControlSetPoint);
     Serial.println("");
     // Serial.print('\t');
     // Serial.print(pitchAngle);
@@ -22,32 +26,54 @@ void printInfo(){
 }
 
 void receiveBluetoothData() {
-  if (SerialBT.available()) {
+   if (SerialBT.available()) {
     String dataReceived = SerialBT.readStringUntil('>');
-    
+
     // Find positions of colons
     int firstColon = dataReceived.indexOf(':');
     int secondColon = dataReceived.indexOf(':', firstColon + 1);
-    
+    int thirdColon = dataReceived.indexOf(':', secondColon + 1);
+    int fourthColon = dataReceived.indexOf(':', thirdColon + 1);
+    int fifthColon = dataReceived.indexOf(':', fourthColon + 1);
+    int sixthColon = dataReceived.indexOf(':', fifthColon + 1);
+
     // Extract values between colons
     String value1 = dataReceived.substring(1, firstColon);
     String value2 = dataReceived.substring(firstColon + 1, secondColon);
-    String value3 = dataReceived.substring(secondColon + 1);
+    String value3 = dataReceived.substring(secondColon + 1, thirdColon);
+    String value4 = dataReceived.substring(thirdColon + 1, fourthColon);
+    String value5 = dataReceived.substring(fourthColon + 1, fifthColon);
+    String value6 = dataReceived.substring(fifthColon + 1, sixthColon);
+    String value7 = dataReceived.substring(sixthColon + 1);
 
     // Convert strings to integers
-    int intValue1 = value1.toDouble();
-    int intValue2 = value2.toDouble();
-    int intValue3 = value3.toDouble();
+    float floatValue1 = value1.toDouble();
+    float floatValue2 = value2.toDouble();
+    float floatValue3 = value3.toDouble();
+    float floatValue4 = value4.toDouble();
+    float floatValue5 = value5.toDouble();
+    float floatValue6 = value6.toDouble();
+    float floatValue7 = value7.toFloat();
 
-    // Serial.print("Recieved value of Kp: ");
-    // Serial.println(intValue1);
-    // Serial.print("Recieved value of Ki: ");
-    // Serial.println(intValue2);
-    // Serial.print("Recieved value of Kd: ");
-    // Serial.println(intValue3);
-    // wayControlSetPoint = intValue3;
-    angleControl.SetTunings(intValue1,intValue2,intValue3); // Set new control parameters
-    
+    angleControl.SetTunings(floatValue1,floatValue2,floatValue3);
+    wayControl.SetTunings(floatValue4,floatValue5,floatValue6);
+    wayControlSetPoint = floatValue7;
+
+    // Print the values
+    // Serial.print("Value 1: ");
+    // Serial.println(floatValue1);
+    // Serial.print("Value 2: ");
+    // Serial.println(floatValue2);
+    // Serial.print("Value 3: ");
+    // Serial.println(floatValue3);
+    // Serial.print("Value 4: ");
+    // Serial.println(floatValue4);
+    // Serial.print("Value 5: ");
+    // Serial.println(floatValue5);
+    // Serial.print("Value 6: ");
+    // Serial.println(floatValue6);
+    // Serial.print("Value 7: ");
+    // Serial.println(floatValue7);
   }
 }
 

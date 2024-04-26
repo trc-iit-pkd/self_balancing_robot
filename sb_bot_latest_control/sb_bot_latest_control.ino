@@ -15,15 +15,15 @@ ESP32Encoder EncoderB;
 #define AENABLE 19   // PWM signal for motor speed
 #define APHASE 18    // HIGH, LOW determines motor direction
 //Right Motor
-#define BENABLE 14   // PWM signal for motor speed
+#define BENABLE 33   // PWM signal for motor speed
 #define BPHASE 13    // HIGH, LOW determines motor direction
 
 //Left Encoder pins
-const int ENCODERA1 = 4;
-const int ENCODERA2 = 16;
+const int ENCODERA1 = 14;
+const int ENCODERA2 = 27;
 //Right Encoder pins
-const int ENCODERB1 = 2;
-const int ENCODERB2 = 12;
+const int ENCODERB1 = 26;
+const int ENCODERB2 = 25;
 
 const uint8_t scl = 22; 
 const uint8_t sda = 21; 
@@ -67,6 +67,7 @@ double pitchAngleOffset = 0; // Offset of the IMU measurement to the real angle
 int sampleTime = 10; // How often the PID algorithm is evaluated (in ms)
 
 // Angle PID
+
 int angleControlMin = -255, angleControlMax = 255; // Limits of the output control signal (motorPWM)
 double angleControlSetPoint = 0; // Setpoint pitch angle
 // double angleControlKP = 10, angleControlKI = 200, angleControlKD = 0.1; // PID controller tuning parameters
@@ -74,8 +75,8 @@ double angleControlKP = 50, angleControlKI = 0, angleControlKD = 0;
 PID angleControl(&KalmanAnglePitch, &motorPWM, &angleControlSetPoint, angleControlKP, angleControlKI , angleControlKD, DIRECT); // Create the PID controller object; '&' symbol attaches variable to the object
 
 // Way PID
-int wayControlMin = -2.5, wayControlMax = 2.5; // Limits of the output control signal (motorPWM)
-double wayControlSetPoint = -1; // Setpoint for path
+int wayControlMin = -2, wayControlMax = 2; // Limits of the output control signal (motorPWM)
+double wayControlSetPoint = 0; // Setpoint for path
 double wayControlKP = 10, wayControlKI = 0, wayControlKD = 0.0; // PID controller tuning parameters
 PID wayControl(&way, &angleControlSetPoint, &wayControlSetPoint, wayControlKP, wayControlKI, wayControlKD, DIRECT); // Create the PID controller object; wayControlSetPoint is the controlled variable and input variable of the angle PID controller
 
@@ -131,6 +132,13 @@ void loop() {
 //    angleControlSetPoint = 3;
 // }
   angleControl.Compute(); // Calculate control signal
+  if (abs(wayControlSetPoint)-abs(angleControlSetPoint)<0.9 && motorPWM>190 && wayControlSetPoint!=0){
+  motorPWM = 190;
+}
+
+else if (abs(wayControlSetPoint)-abs(angleControlSetPoint)<0.9 && motorPWM<-190 && wayControlSetPoint!=0) {
+ motorPWM = -190;   // Limits of the output control signal (motorPWM)
+}
   if(enabled == true){
     moveMotor(int(motorPWM)); // Move motors
   }
