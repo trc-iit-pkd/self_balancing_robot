@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/1837def7-1b37-495c-a296-e1b2fe821bb3)# ============= Prototype-1 ================== 
+# ============= Prototype-1 ================== 
 # Self-Balancing Robot 
 ## Required Components:
 - ESP-8266(Nodemcu-82)
@@ -10,9 +10,9 @@
 - OE-37 Hall Effect Magnetic Encoders(useful for the next phase of the system for state space based segway motion control)
 
 ## Robot Design
-- <img src="(https://fullycrack.org/wp-content/uploads/2023/03/unnamed.png)" alt="Fusion 360 Icon" width="5" height="5" style="vertical-align:middle;">Designed on Autodesk Fusion 360.
-- Model was mechanical analyzed properly before the compoents were bought and the design was made in the CAD software
-- Note: The imu should not be placed so far below the COM of the system. Also make a rought estimate of the natural frequency of the system as it will help in setting the control loop(super loop) frequency for a decent performance.
+- <img src="[https://fullycrack.org/wp-content/uploads/2023/03/unnamed.png](https://fullycrack.org/wp-content/uploads/2023/03/unnamed.png)" alt="Fusion 360 Icon" width="20" height="20" style="vertical-align:middle;"> Designed on Autodesk Fusion 360.
+- The model was mechanically analyzed properly before the components were bought and the design was made in the CAD software.
+- **Note**: The IMU should not be placed too far below the COM (Center of Mass) of the system. Also, make a rough estimate of the natural frequency of the system as it will help in setting the control loop (super loop) frequency for better performance.
 
 ## Control Algorithm for Self-Balancing
 ### Hardware
