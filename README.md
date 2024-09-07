@@ -10,7 +10,7 @@
 - OE-37 Hall Effect Magnetic Encoders(useful for the next phase of the system for state space based 
 
 ## Robot Design
-- Designed on Autodesk Fusion 360.
+- ![Fusion 360 Icon](https://example.com/fusion360_icon.png) Designed on Autodesk Fusion 360
 - Model was mechanical analyzed properly before the compoents were bought and the design was made in the CAD software
 - Note: The imu should not be placed so far below the COM of the system. Also make a rought estimate of the natural frequency of the system as it will help in setting the control loop(super loop) frequency for a decent performance.
 
