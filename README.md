@@ -7,12 +7,14 @@
 - MPU9050 Imu
 - DC-DC Buck Converter (24v/12v to 5v/5A)
 - 11.1V 3S LiPo Battery (2200mAh 30C)
+- OE-37 Hall Effect Magnetic Encoders(useful for the next phase of the system for state space based 
 
 ## Robot Design
 - Designed on Autodesk Fusion 360.
 - Model was mechanical analyzed properly before the compoents were bought and the design was made in the CAD software
 - Note: The imu should not be placed so far below the COM of the system. Also make a rought estimate of the natural frequency of the system as it will help in setting the control loop(super loop) frequency for a decent performance.
-  
+
+## Control Algorithm for Self-Balancing
 
 ## Circuit Connections
 ![self_balancing circuit](https://github.com/trc-2023-2024/self_balancing_robot/assets/97225407/47423409-0cb3-4e24-9442-a9674bf0c0a8)
