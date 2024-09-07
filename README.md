@@ -33,11 +33,11 @@ The control algorithm is primarily based on feedback from the IMU (MPU9050/6050)
 - Link to code for PID-control based self-balancing --> [https://github.com/trc-2023-2024/self_balancing_robot/blob/hardware/sb_bot_control.ino]
 <img src="https://static-00.iconduck.com/assets.00/arduino-ide-icon-2048x2025-x4ims8sb.png" alt="Arduino IDE Icon" width="50" height="50" style="vertical-align:middle;">
 ### Hardware Results
-- <img src="https://drive.google.com/file/d/1a0jc_WoTKEtQyYueP9N59gltYMUeTBpm/view?usp=sharing" alt="Self Balancing Robot" width="480" height="640" style="vertical-align:middle;"> 
+- <img src="https://drive.google.com/drive/u/0/folders/1tUwDEiyPsDD87bBJ_FoU0sQTpsBuYyro" alt="Self Balancing Robot" width="480" height="640" style="vertical-align:middle;"> 
 - link to video here ---> https://youtu.be/jyWlr8lFBLY
+  
 ## Circuit Connections
 ![self_balancing circuit](https://github.com/trc-2023-2024/self_balancing_robot/assets/97225407/47423409-0cb3-4e24-9442-a9674bf0c0a8)
-
 
 ## References
 - [https://www.instructables.com/Arduino-Self-Balancing-Robot-1/]
