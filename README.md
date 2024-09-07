@@ -1,4 +1,4 @@
-# ============= Protoype-1 ================== 
+# ============= Prototype-1 ================== 
 # Self-Balancing Robot Hardware
 # Required Components:
 - ESP-8266(Nodemcu-82)
@@ -21,4 +21,4 @@
 # References
 - [https://www.instructables.com/Arduino-Self-Balancing-Robot-1/]
 # ==========================================================================================
-# Protype-2 Segway motion ---> Need State Space Controllers (work progress on HOLD as of now)
+# Prototype-2 Segway motion ---> Need State Space Controllers (work progress on HOLD as of now)
