@@ -15,7 +15,7 @@
 - Note: The imu should not be placed so far below the COM of the system. Also make a rought estimate of the natural frequency of the system as it will help in setting the control loop(super loop) frequency for a decent performance.
 
 ## Control Algorithm for Self-Balancing
-
+### Hardware
 - -->Link to code for PID-control based self-balancing [https://github.com/trc-2023-2024/self_balancing_robot/blob/hardware/sb_bot_control.ino]
 
 ## Circuit Connections
