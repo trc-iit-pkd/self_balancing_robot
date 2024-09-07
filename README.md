@@ -20,16 +20,15 @@
 - For Arduino IDE (https://www.arduino.cc/en/software)
 - For The ESP82-Arduino Core, put the link beside[https://arduino.esp8266.com/stable/package_esp8266com_index.json] in the URL manager in Arduino Preferences section.
 ### Hardware
-- The control algorithm is primarily based on feedback from the IMU (MPU9050/6050). The core logic involves driving the motors in the direction of the robot’s tilt, allowing the motor torque to counteract the imbalance and prevent the robot from tipping over. Since the system is underactuated and inherently marginally unstable, the control strategy ensures continuous motor adjustments to maintain balance.
+The control algorithm is primarily based on feedback from the IMU (MPU9050/6050). The core logic involves driving the motors in the direction of the robot’s tilt, allowing the motor torque to counteract the imbalance and prevent the robot from tipping over. Since the system is underactuated and inherently marginally unstable, the control strategy ensures continuous motor adjustments to maintain balance.
 
 - A simple PID controller is used to achieve this stabilization.
 - The code was written in the Arduino IDE (C programming language) using the ESP82-Arduino Core.
 - Feedback from the IMU consists mainly of accelerometer and gyroscope data, specifically roll, pitch, roll rate, and pitch rate. The gyroscope data is integrated to derive roll and pitch rates, which are then fused with accelerometer data to eliminate noise and errors in individual streams, providing fully filtered roll and pitch values.
+**Note**: Set the I2C communication to fast mode by configuring the I2C frequency to 400kHz.
 
-Note: Set the I2C communication to fast mode by configuring the I2C frequency to 400kHz.
-The filtered roll and pitch values are then sent to the PID controller, which calculates the control output (PWM signals) to adjust motor behavior and balance the robot.
-
-Note: For improved performance, constrain the control velocity within maximum and minimum PWM values, considering the motor’s operating voltage and the input voltage.
+-The filtered roll and pitch values are then sent to the PID controller, which calculates the control output (PWM signals) to adjust motor behavior and balance the robot.
+**Note**: For improved performance, constrain the control velocity within maximum and minimum PWM values, considering the motor’s operating voltage and the input voltage from power source.
 
 - Link to code for PID-control based self-balancing --> [https://github.com/trc-2023-2024/self_balancing_robot/blob/hardware/sb_bot_control.ino]
 <img src="https://static-00.iconduck.com/assets.00/arduino-ide-icon-2048x2025-x4ims8sb.png" alt="Arduino IDE Icon" width="50" height="50" style="vertical-align:middle;">
