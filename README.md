@@ -14,12 +14,14 @@
 - The model was mechanically analyzed properly before the components were bought and the design was made in the CAD software.
 - **Note**: The IMU should not be placed too far below the COM (Center of Mass) of the system. Also, make a rough estimate of the natural frequency of the system as it will help in setting the control loop (super loop) frequency for better performance.
 
-- <img src="https://fullycrack.org/wp-content/uploads/2023/03/unnamed.png" alt="Fusion 360 Icon" width="50" height="50" style="vertical-align:middle;">
+- <img src="https://fullycrack.org/wp-content/uploads/2023/03/unnamed.png" alt="Fusion 360 Icon" width="50" height="50" style="vertical-align:middle;"> 
 
 ## Control Algorithm for Self-Balancing
 ### Hardware
-- -->Link to code for PID-control based self-balancing [https://github.com/trc-2023-2024/self_balancing_robot/blob/hardware/sb_bot_control.ino]
 
+
+- -->Link to code for PID-control based self-balancing [https://github.com/trc-2023-2024/self_balancing_robot/blob/hardware/sb_bot_control.ino]
+<img src="https://static-00.iconduck.com/assets.00/arduino-ide-icon-2048x2025-x4ims8sb.png" alt="Arduino IDE Icon" width="50" height="50" style="vertical-align:middle;">
 ## Circuit Connections
 ![self_balancing circuit](https://github.com/trc-2023-2024/self_balancing_robot/assets/97225407/47423409-0cb3-4e24-9442-a9674bf0c0a8)
 
