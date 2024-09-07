@@ -16,6 +16,8 @@
 
 ## Control Algorithm for Self-Balancing
 
+- -->Link to code for PID-control based self-balancing [https://github.com/trc-2023-2024/self_balancing_robot/blob/hardware/sb_bot_control.ino]
+
 ## Circuit Connections
 ![self_balancing circuit](https://github.com/trc-2023-2024/self_balancing_robot/assets/97225407/47423409-0cb3-4e24-9442-a9674bf0c0a8)
 
