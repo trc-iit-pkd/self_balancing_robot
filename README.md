@@ -10,7 +10,7 @@
 - OE-37 Hall Effect Magnetic Encoders(useful for the next phase of the system for state space based segway motion control)
 
 ## Robot Design
-- <img src="https://fullycrack.org/wp-content/uploads/2023/03/unnamed.png" alt="Fusion 360 Icon" width="20" height="20" style="vertical-align:middle;"> Designed on Autodesk Fusion 360.
+- Designed on Autodesk Fusion 360. <img src="https://fullycrack.org/wp-content/uploads/2023/03/unnamed.png" alt="Fusion 360 Icon" width="50" height="50" style="vertical-align:middle;">
 - The model was mechanically analyzed properly before the components were bought and the design was made in the CAD software.
 - **Note**: The IMU should not be placed too far below the COM (Center of Mass) of the system. Also, make a rough estimate of the natural frequency of the system as it will help in setting the control loop (super loop) frequency for better performance.
 
