@@ -1,5 +1,5 @@
 # ============= Prototype-1 ================== 
-# Self-Balancing Robot Hardware
+# Self-Balancing Robot 
 ## Required Components:
 - ESP-8266(Nodemcu-82)
 - Motor Driver MDD3A (PWM-PWM motor driver)
