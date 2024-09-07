@@ -1,4 +1,4 @@
-# ============= Prototype-1 ================== 
+![image](https://github.com/user-attachments/assets/1837def7-1b37-495c-a296-e1b2fe821bb3)# ============= Prototype-1 ================== 
 # Self-Balancing Robot 
 ## Required Components:
 - ESP-8266(Nodemcu-82)
@@ -7,10 +7,10 @@
 - MPU9050 Imu
 - DC-DC Buck Converter (24v/12v to 5v/5A)
 - 11.1V 3S LiPo Battery (2200mAh 30C)
-- OE-37 Hall Effect Magnetic Encoders(useful for the next phase of the system for state space based 
+- OE-37 Hall Effect Magnetic Encoders(useful for the next phase of the system for state space based segway motion control)
 
 ## Robot Design
-- ![Fusion 360 Icon](https://example.com/fusion360_icon.png) Designed on Autodesk Fusion 360
+- ![Fusion 360 Icon]([https://example.com/fusion360_icon.png](https://fullycrack.org/wp-content/uploads/2023/03/unnamed.png)) Designed on Autodesk Fusion 360
 - Model was mechanical analyzed properly before the compoents were bought and the design was made in the CAD software
 - Note: The imu should not be placed so far below the COM of the system. Also make a rought estimate of the natural frequency of the system as it will help in setting the control loop(super loop) frequency for a decent performance.
 
